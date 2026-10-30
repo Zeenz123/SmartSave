@@ -1,0 +1,28 @@
+# Gradle
+.gradle/
+build/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# Databases & local run logs
+*.db
+*.db-journal
+smartsave.db*
+test_*.db*
+
+# OS specific
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Temporary scratch files
+*.log
+*.tmp
+
+*.zip
