@@ -72,4 +72,14 @@ class AlgorithmsAndAiTest {
         Wallet w = new Wallet(1, 400, 0, 1000, 0);
         assertThat(new AiInsightEngine().forecast(w, txs.subList(0, 4), 1)).contains("day(s)");
     }
+
+    @Test
+    @DisplayName("UpdateChecker correctly compares semver tags")
+    void versionComparison() {
+        assertThat(com.example.myfirstapp.service.UpdateChecker.isNewer("v1.0.1", "v1.0.0")).isTrue();
+        assertThat(com.example.myfirstapp.service.UpdateChecker.isNewer("v1.1.0", "v1.0.9")).isTrue();
+        assertThat(com.example.myfirstapp.service.UpdateChecker.isNewer("v2.0.0", "v1.9.9")).isTrue();
+        assertThat(com.example.myfirstapp.service.UpdateChecker.isNewer("v1.0.0", "v1.0.0")).isFalse();
+        assertThat(com.example.myfirstapp.service.UpdateChecker.isNewer("v0.9.9", "v1.0.0")).isFalse();
+    }
 }

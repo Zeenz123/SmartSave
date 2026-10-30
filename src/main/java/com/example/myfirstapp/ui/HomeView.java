@@ -3,9 +3,11 @@ package com.example.myfirstapp.ui;
 import com.example.myfirstapp.model.User;
 import com.example.myfirstapp.model.Wallet;
 import com.example.myfirstapp.service.AuthService;
+import com.example.myfirstapp.service.UpdateChecker;
 import com.example.myfirstapp.service.WalletService;
 import javafx.animation.FadeTransition;
 import javafx.animation.RotateTransition;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -44,6 +46,7 @@ public class HomeView extends StackPane {
     private Label availableText;
     private Label coinsText;
     private Label withdrawableHintText;
+    private final VBox updateBannerContainer = new VBox();
 
     public HomeView() {
         setAlignment(Pos.TOP_CENTER);
@@ -136,7 +139,7 @@ public class HomeView extends StackPane {
             ScreenManager.getInstance().showLogin();
         });
 
-        mainLayout.getChildren().addAll(bannerOuter, flipshowCard, gridContainer, userStatus, signOutBtn);
+        mainLayout.getChildren().addAll(bannerOuter, updateBannerContainer, flipshowCard, gridContainer, userStatus, signOutBtn);
 
         ScrollPane scrollPane = new ScrollPane(mainLayout);
         scrollPane.setFitToWidth(true);
@@ -154,6 +157,63 @@ public class HomeView extends StackPane {
         getChildren().addAll(scrollPane, aiButton);
 
         refreshWalletData();
+        checkForAppUpdates();
+    }
+
+    private void checkForAppUpdates() {
+        Thread thread = new Thread(() -> {
+            UpdateChecker.UpdateInfo info = UpdateChecker.checkLatestRelease();
+            if (info.isUpdateAvailable()) {
+                Platform.runLater(() -> showUpdateBanner(info));
+            }
+        });
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void showUpdateBanner(UpdateChecker.UpdateInfo info) {
+        updateBannerContainer.getChildren().clear();
+        HBox banner = new HBox(10);
+        banner.setAlignment(Pos.CENTER_LEFT);
+        banner.setStyle("-fx-background-color: #E8F5E9; -fx-background-radius: 16px; -fx-border-color: #A5D6A7; " +
+                "-fx-border-radius: 16px; -fx-padding: 10 14; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 6, 0, 0, 2);");
+
+        Label icon = new Label("🚀");
+        icon.setStyle("-fx-font-size: 20px;");
+
+        VBox text = new VBox(2);
+        Label title = new Label("Update Available: " + info.getLatestVersion());
+        title.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #2E7D32;");
+        Label desc = new Label("A new SmartSave release is available. Tap to download.");
+        desc.setStyle("-fx-font-size: 11px; -fx-text-fill: #546E7A;");
+        text.getChildren().addAll(title, desc);
+
+        Region sp = new Region();
+        HBox.setHgrow(sp, Priority.ALWAYS);
+
+        Button downloadBtn = new Button("⬇ Update");
+        downloadBtn.setStyle("-fx-background-color: #2E7D32; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; " +
+                "-fx-background-radius: 12px; -fx-cursor: hand; -fx-padding: 5 12;");
+        downloadBtn.setOnAction(e -> openUrl(info.getDownloadUrl()));
+
+        Button closeBtn = new Button("✕");
+        closeBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #78909C; -fx-font-size: 11px; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0 4;");
+        closeBtn.setOnAction(e -> updateBannerContainer.getChildren().clear());
+
+        banner.getChildren().addAll(icon, text, sp, downloadBtn, closeBtn);
+        updateBannerContainer.getChildren().add(banner);
+    }
+
+    private void openUrl(String url) {
+        try {
+            if (java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.BROWSE)) {
+                java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
+            } else {
+                Runtime.getRuntime().exec(new String[]{"rundll32", "url.dll,FileProtocolHandler", url});
+            }
+        } catch (Exception ex) {
+            System.err.println("Could not open URL: " + ex.getMessage());
+        }
     }
 
     private VBox createSlide1Hidden() {
