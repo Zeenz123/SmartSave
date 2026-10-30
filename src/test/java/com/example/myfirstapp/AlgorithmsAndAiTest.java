@@ -82,4 +82,12 @@ class AlgorithmsAndAiTest {
         assertThat(com.example.myfirstapp.service.UpdateChecker.isNewer("v1.0.0", "v1.0.0")).isFalse();
         assertThat(com.example.myfirstapp.service.UpdateChecker.isNewer("v0.9.9", "v1.0.0")).isFalse();
     }
+
+    @Test
+    @DisplayName("UpdateChecker connects and fetches GitHub release information")
+    void releaseFetchTest() {
+        com.example.myfirstapp.service.UpdateChecker.UpdateInfo info = com.example.myfirstapp.service.UpdateChecker.checkLatestRelease();
+        assertThat(info.getLatestVersion()).isEqualTo("v1.0.0");
+        assertThat(info.getDownloadUrl()).contains("SmartSave-v1.0.0.apk");
+    }
 }
