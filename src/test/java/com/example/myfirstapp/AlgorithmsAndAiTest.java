@@ -90,4 +90,20 @@ class AlgorithmsAndAiTest {
         assertThat(info.getLatestVersion()).isEqualTo("v1.0.0");
         assertThat(info.getDownloadUrl()).contains("SmartSave-v1.0.0.apk");
     }
+
+    @Test
+    @DisplayName("GeminiAiService initializes and provides graceful fallback")
+    void geminiAiServiceFallback() {
+        com.example.myfirstapp.ai.GeminiAiService service = com.example.myfirstapp.ai.GeminiAiService.getInstance();
+        assertThat(service).isNotNull();
+
+        Wallet w = new Wallet(1, 100.50, 50.00, 200.00, 50.00);
+        List<Transaction> txs = List.of(tx(1, 2, 25.0, Transaction.Type.TRANSFER, 1));
+
+        String recommendations = service.getSavingRecommendations(null, w, txs);
+        assertThat(recommendations).contains("SmartSave Coach");
+
+        String anomalies = service.detectSpendingAnomalies(txs, 1);
+        assertThat(anomalies).isNotEmpty();
+    }
 }

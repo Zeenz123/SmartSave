@@ -37,11 +37,21 @@ public class AiAssistantDialog {
         // Header
         HBox header = new HBox(10);
         header.setAlignment(Pos.CENTER_LEFT);
+        Label titleLabel = new Label("SmartSave AI Coach");
+        titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #00838F;");
+        
+        javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Button apiKeyBtn = new Button(com.example.myfirstapp.ai.GeminiAiService.getInstance().isApiKeyConfigured() ? "✨ Gemini Active" : "🔑 Gemini Key");
+        apiKeyBtn.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #00BCD4; -fx-text-fill: #00838F; -fx-font-size: 11px; -fx-font-weight: bold; -fx-background-radius: 12px; -fx-border-radius: 12px; -fx-cursor: hand;");
+
         header.getChildren().addAll(
                 IconHelper.getAiSparkleIcon(Color.web("#00BCD4"), 1.4),
-                new Label("SmartSave AI Study & Savings Coach")
+                titleLabel,
+                spacer,
+                apiKeyBtn
         );
-        header.getChildren().get(1).setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #00838F;");
 
         // Chat / Response Area
         TextArea chatArea = new TextArea();
@@ -49,6 +59,20 @@ public class AiAssistantDialog {
         chatArea.setWrapText(true);
         chatArea.setPrefRowCount(14);
         chatArea.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-background-radius: 12px;");
+
+        apiKeyBtn.setOnAction(e -> {
+            javafx.scene.control.TextInputDialog td = new javafx.scene.control.TextInputDialog(
+                    com.example.myfirstapp.ai.GeminiAiService.getInstance().getApiKey() != null ? com.example.myfirstapp.ai.GeminiAiService.getInstance().getApiKey() : "");
+            td.setTitle("Google Gemini API Setup");
+            td.setHeaderText("SmartSave AI Engine: Google Gemini 2.5 Flash");
+            td.setContentText("Enter Gemini API Key (or leave blank for built-in heuristic AI):");
+            td.showAndWait().ifPresent(k -> {
+                com.example.myfirstapp.ai.GeminiAiService.getInstance().setApiKey(k);
+                boolean active = com.example.myfirstapp.ai.GeminiAiService.getInstance().isApiKeyConfigured();
+                apiKeyBtn.setText(active ? "✨ Gemini Active" : "🔑 Gemini Key");
+                chatArea.appendText("\n\n🤖 [System]: " + (active ? "Google Gemini API connected successfully! Using Gemini 2.5 Flash." : "Using built-in SmartSave heuristic AI models."));
+            });
+        });
 
         User user = authService.getCurrentUser();
         chatArea.setText(aiService.getPersonalizedGreeting(user));

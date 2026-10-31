@@ -1,16 +1,21 @@
 package com.example.myfirstapp.service;
 
 import com.example.myfirstapp.ai.AiInsightEngine;
+import com.example.myfirstapp.ai.GeminiAiService;
 import com.example.myfirstapp.ai.IntentClassifier;
 import com.example.myfirstapp.dao.TransactionDao;
+import com.example.myfirstapp.model.Transaction;
 import com.example.myfirstapp.model.User;
 import com.example.myfirstapp.model.Wallet;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 
 /**
  * Intelligent AI Assistant providing personalized study recommendations,
  * financial discipline guidance, and saving coaching.
+ * Powered by Google Gemini API with fallback to local heuristic models.
  */
 public class AiAssistantService {
     private final AuthService authService;
@@ -18,6 +23,7 @@ public class AiAssistantService {
     private final TransactionDao transactionDao = new TransactionDao();
     private final IntentClassifier classifier = new IntentClassifier();
     private final AiInsightEngine insightEngine = new AiInsightEngine();
+    private final GeminiAiService geminiService = GeminiAiService.getInstance();
 
     public AiAssistantService() {
         this.authService = AuthService.getInstance();
@@ -48,14 +54,23 @@ public class AiAssistantService {
             return "Please enter a question so I can assist you!";
         }
 
+        Wallet wallet = user != null ? walletService.getWallet(user.getId()) : null;
+        List<Transaction> txs = user != null ? transactionDao.findByUserId(user.getId()) : Collections.emptyList();
+
         IntentClassifier.Intent intent = classifier.classify(query);
 
-        if (intent == IntentClassifier.Intent.PROGRESS && user != null) {
-            return insightEngine.forecast(walletService.getWallet(user.getId()), transactionDao.findByUserId(user.getId()), user.getId());
+        if (intent == IntentClassifier.Intent.PROGRESS && user != null && wallet != null) {
+            return geminiService.predictGoalTimeline(wallet, txs, user.getId(), insightEngine);
         }
 
-        if (intent == IntentClassifier.Intent.INSIGHTS && user != null) {
-            return insightEngine.insights(transactionDao.findByUserId(user.getId()), user.getId());
+        if (intent == IntentClassifier.Intent.INSIGHTS && user != null && wallet != null) {
+            return geminiService.analyzeSpending(txs, wallet, insightEngine, user.getId());
+        }
+
+        // Check if Gemini can provide a live generative answer
+        String geminiReply = geminiService.askAssistant(query, user, wallet, txs);
+        if (geminiReply != null && !geminiReply.isBlank()) {
+            return geminiReply;
         }
 
         if (intent == IntentClassifier.Intent.GUARDIAN) {
