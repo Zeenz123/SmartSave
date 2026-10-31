@@ -125,14 +125,28 @@ public class WithdrawalView extends VBox {
         withdrawAmountField = new TextField("65.00");
         withdrawAmountField.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #263238; -fx-background-color: #F5F7F8; -fx-background-radius: 14px; -fx-border-color: #CFD8DC; -fx-border-radius: 14px; -fx-padding: 10px 14px;");
 
-        Button btnWithdraw = new Button("Execute Withdrawal");
-        btnWithdraw.getStyleClass().add("cyan-button");
-        btnWithdraw.setStyle("-fx-background-color: #00BCD4; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 15px; " +
-                "-fx-background-radius: 16px; -fx-padding: 12px 24px; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(0, 188, 212, 0.3), 8, 0.1, 0, 3);");
-        btnWithdraw.setPrefWidth(Double.MAX_VALUE);
-        btnWithdraw.setOnAction(e -> handleExecuteWithdrawal());
+        Label gpayLabel = new Label("Google Pay UPI Destination");
+        gpayLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #455A64;");
 
-        inputCard.getChildren().addAll(withdrawLabel, withdrawAmountField, btnWithdraw);
+        TextField gpayUpiField = new TextField("alex@okaxis");
+        gpayUpiField.setPromptText("Enter GPay UPI ID (e.g. name@okaxis)");
+        gpayUpiField.setStyle("-fx-font-size: 14px; -fx-background-color: #F5F7F8; -fx-background-radius: 12px; -fx-border-color: #CFD8DC; -fx-border-radius: 12px; -fx-padding: 8px 12px;");
+
+        // Google Pay Quick Payout Button
+        Button btnPayWithGPay = new Button("⚡ Pay / Withdraw with Google Pay UPI");
+        btnPayWithGPay.setStyle("-fx-background-color: #1F1F1F; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; " +
+                "-fx-background-radius: 14px; -fx-padding: 12px 20px; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0, 0, 2);");
+        btnPayWithGPay.setPrefWidth(Double.MAX_VALUE);
+        btnPayWithGPay.setOnAction(e -> handleExecuteWithdrawal(gpayUpiField.getText().trim(), true));
+
+        Button btnWithdraw = new Button("Withdraw to Bank Account");
+        btnWithdraw.getStyleClass().add("cyan-button");
+        btnWithdraw.setStyle("-fx-background-color: #00BCD4; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; " +
+                "-fx-background-radius: 14px; -fx-padding: 10px 20px; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(0, 188, 212, 0.3), 8, 0.1, 0, 3);");
+        btnWithdraw.setPrefWidth(Double.MAX_VALUE);
+        btnWithdraw.setOnAction(e -> handleExecuteWithdrawal(gpayUpiField.getText().trim(), false));
+
+        inputCard.getChildren().addAll(withdrawLabel, withdrawAmountField, gpayLabel, gpayUpiField, btnPayWithGPay, btnWithdraw);
 
         // 3. Section Title: 5 Early Release & Emergency Options
         Label sectionTitle = new Label("5 Early Release & Emergency Options");
@@ -275,7 +289,7 @@ public class WithdrawalView extends VBox {
         targetStatusText.setManaged(true);
     }
 
-    private void handleExecuteWithdrawal() {
+    private void handleExecuteWithdrawal(String upiId, boolean isGooglePay) {
         String input = withdrawAmountField.getText().trim();
         double amount;
         try {
@@ -314,17 +328,24 @@ public class WithdrawalView extends VBox {
         if (withdrawn) {
             Wallet updated = walletService.getWallet(user.getId());
             double coinsSpent = Math.max(0.0, coinsBefore - updated.getReleaseCoins());
+            String methodText = isGooglePay
+                    ? "paid to Google Pay UPI (" + (upiId == null || upiId.isBlank() ? "alex@okaxis" : upiId) + ")"
+                    : "transferred to Bank Account";
             if (coinsSpent > 0) {
                 showFeedback(String.format(Locale.getDefault(),
-                        "Successfully withdrawn ₹%.2f! Spent %.0f Release Coins (%.0f remaining).",
-                        amount, coinsSpent, updated.getReleaseCoins()), false);
+                        "Successfully %s ₹%.2f! Spent %.0f Release Coins (%.0f remaining).",
+                        methodText, amount, coinsSpent, updated.getReleaseCoins()), false);
             } else {
                 showFeedback(String.format(Locale.getDefault(),
-                        "Successfully withdrawn ₹%.2f from your wallet!", amount), false);
+                        "Successfully %s ₹%.2f from your withdrawable balance!", methodText, amount), false);
             }
             refreshStatus();
             withdrawAmountField.setText("");
         }
+    }
+
+    private void handleExecuteWithdrawal() {
+        handleExecuteWithdrawal("alex@okaxis", true);
     }
 
     private void handleRedeemCoins() {

@@ -146,10 +146,16 @@ public class HomeView extends StackPane {
         scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
 
         // 4. Floating AI Action Button (Bottom Right)
-        StackPane aiButton = new StackPane(IconHelper.getAiSparkleIcon(Color.WHITE, 1.5));
-        aiButton.getStyleClass().add("ai-fab");
-        aiButton.setPrefSize(56, 56);
-        aiButton.setMaxSize(56, 56);
+        HBox aiButton = new HBox(8);
+        aiButton.setAlignment(Pos.CENTER);
+        aiButton.setStyle("-fx-background-color: #00838F; -fx-background-radius: 28px; -fx-padding: 8 16; " +
+                "-fx-effect: dropshadow(gaussian, rgba(0,131,143,0.5), 14, 0.2, 0, 3); -fx-cursor: hand;");
+        Label aiIcon = new Label();
+        aiIcon.setGraphic(IconHelper.getAiSparkleIcon(Color.WHITE, 1.3));
+        Label aiLabel = new Label("AI Coach (Chat & Voice)");
+        aiLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13px;");
+        aiButton.getChildren().addAll(aiIcon, aiLabel);
+
         StackPane.setAlignment(aiButton, Pos.BOTTOM_RIGHT);
         StackPane.setMargin(aiButton, new Insets(0, 24, 24, 0));
         aiButton.setOnMouseClicked(e -> new AiAssistantDialog().show());

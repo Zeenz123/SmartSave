@@ -125,27 +125,38 @@ public class StudyTaskView extends VBox {
         timelineSlider = new Slider(0, 100, 0);
         timelineSlider.setOnMouseReleased(e -> handleSeek((int) timelineSlider.getValue()));
 
-        Label ruleNotice = new Label("🛡️ Anti-Cheating: Forward skipping restricted to 25s max. Backward review is unlimited.");
-        ruleNotice.setStyle("-fx-font-size: 11px; -fx-text-fill: #E65100; -fx-font-style: italic; -fx-wrap-text: true;");
+        Label ruleNotice = new Label("🛡️ Anti-Cheating Enforced: Forward skipping is strictly disabled! Only progressive learning and backward review permitted.");
+        ruleNotice.setStyle("-fx-font-size: 11px; -fx-text-fill: #E65100; -fx-font-weight: bold; -fx-wrap-text: true;");
 
         HBox controls = new HBox(12);
         controls.setAlignment(Pos.CENTER);
 
-        Button rewBtn = new Button("⏪ -15s");
-        rewBtn.setStyle("-fx-background-color: #B2EBF2; -fx-text-fill: #006064; -fx-font-weight: bold; -fx-cursor: hand;");
+        Button rewBtn = new Button("⏪ -15s Review");
+        rewBtn.setStyle("-fx-background-color: #B2EBF2; -fx-text-fill: #006064; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 8px;");
         rewBtn.setOnAction(e -> handleRelativeSeek(-15));
 
         playPauseBtn = new Button("▶ Start Study Session");
         playPauseBtn.getStyleClass().add("cyan-button");
         playPauseBtn.setOnAction(e -> togglePlayPause());
 
-        Button fwdBtn = new Button("+20s ⏩");
-        fwdBtn.setStyle("-fx-background-color: #B2EBF2; -fx-text-fill: #006064; -fx-font-weight: bold; -fx-cursor: hand;");
-        fwdBtn.setOnAction(e -> handleRelativeSeek(20));
+        // Front-skip (+20s) button intentionally removed per anti-cheating mandate
 
-        controls.getChildren().addAll(rewBtn, playPauseBtn, fwdBtn);
+        controls.getChildren().addAll(rewBtn, playPauseBtn);
 
-        playerCard.getChildren().addAll(playerHeader, timeLabel, sessionProgressBar, timelineSlider, ruleNotice, controls);
+        HBox taskActionRow = new HBox(10);
+        taskActionRow.setAlignment(Pos.CENTER);
+
+        Button btnOpenYoutube = new Button("📺 Open Video on YouTube");
+        btnOpenYoutube.setStyle("-fx-background-color: #FF0000; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 8px;");
+        btnOpenYoutube.setOnAction(e -> openYoutubeVideo());
+
+        Button btnAiLiveTask = new Button("✨ Generate Live Task with Gemini AI");
+        btnAiLiveTask.setStyle("-fx-background-color: #6200EA; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 8px;");
+        btnAiLiveTask.setOnAction(e -> generateAiLiveTask());
+
+        taskActionRow.getChildren().addAll(btnOpenYoutube, btnAiLiveTask);
+
+        playerCard.getChildren().addAll(playerHeader, timeLabel, sessionProgressBar, timelineSlider, ruleNotice, controls, taskActionRow);
 
         // 3. Quiz Section Card
         quizContainer = new VBox(10);
@@ -269,17 +280,50 @@ public class StudyTaskView extends VBox {
     }
 
     private void handleSeek(int target) {
-        boolean ok = studySession.seekTo(target);
-        if (!ok) {
-            feedbackLabel.setText("⚠️ Forward skip limited to 25 seconds to protect study discipline.");
+        if (studySession == null) return;
+        int maxAllowed = studySession.getMaxUnlockedSeconds();
+        if (target > maxAllowed) {
+            // Strictly prevent forward skipping per anti-cheating mandate
+            timelineSlider.setValue(maxAllowed);
+            feedbackLabel.setText("🛡️ Anti-Cheating: Forward skipping is strictly disabled! You cannot skip ahead in the lesson. Only backward review is permitted.");
             feedbackLabel.setStyle("-fx-text-fill: #E65100;");
+            return;
         }
+        studySession.seekTo(target);
         updateProgressDisplay();
     }
 
     private void handleRelativeSeek(int delta) {
+        if (delta > 0) return; // Disallow forward seeking
         int target = studySession.getCurrentSeconds() + delta;
         handleSeek(target);
+    }
+
+    private void openYoutubeVideo() {
+        if (selectedTask != null && selectedTask.resourceUrl != null) {
+            try {
+                if (java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.BROWSE)) {
+                    java.awt.Desktop.getDesktop().browse(new java.net.URI(selectedTask.resourceUrl));
+                    feedbackLabel.setText("Opened YouTube video: " + selectedTask.resourceUrl);
+                    feedbackLabel.setStyle("-fx-text-fill: #00BCD4;");
+                }
+            } catch (Exception ex) {
+                feedbackLabel.setText("Resource URL: " + selectedTask.resourceUrl);
+                feedbackLabel.setStyle("-fx-text-fill: #00BCD4;");
+            }
+        }
+    }
+
+    private void generateAiLiveTask() {
+        User user = authService.getCurrentUser();
+        String sub = user != null ? user.getSubjects() : "finance";
+        EducationalTaskService.TaskTemplate liveTask = taskService.generateAiLiveTask(user != null ? user.getId() : 0, sub);
+        availableTasks.add(0, liveTask);
+        taskSelector.getItems().add(0, liveTask.title + " (+" + (int) liveTask.coinsReward + " Coins)");
+        taskSelector.getSelectionModel().select(0);
+        loadSelectedTask(0);
+        feedbackLabel.setText("✨ Google Gemini AI generated a new real-time interactive task with YouTube video!");
+        feedbackLabel.setStyle("-fx-text-fill: #00BCD4;");
     }
 
     private void updateProgressDisplay() {

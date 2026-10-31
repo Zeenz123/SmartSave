@@ -143,7 +143,7 @@ public class EducationalTaskService {
                 "TASK-ECON-101",
                 "Understanding Compound Interest & Impulse Spending",
                 "Financial Literacy",
-                "https://openstax.org/details/books/principles-finance",
+                "https://www.youtube.com/watch?v=wf91rEGw88Q",
                 60, // 60 seconds study prototype
                 15.0,
                 Arrays.asList(
@@ -159,7 +159,7 @@ public class EducationalTaskService {
                 "TASK-CS-201",
                 "Algorithmic Thinking: Time Complexity & Big-O",
                 "Computer Science",
-                "https://ocw.mit.edu/courses/6-006-introduction-to-algorithms/",
+                "https://www.youtube.com/watch?v=D6xkbGLQesk",
                 90,
                 20.0,
                 Arrays.asList(
@@ -175,7 +175,7 @@ public class EducationalTaskService {
                 "TASK-PROD-301",
                 "Deep Work: Eliminating Distractions During Study Hours",
                 "Productivity & Discipline",
-                "https://www.coursera.org/learn/learning-how-to-learn",
+                "https://www.youtube.com/watch?v=s8YkO4sL0dI",
                 60,
                 15.0,
                 Arrays.asList(
@@ -185,6 +185,59 @@ public class EducationalTaskService {
         ));
 
         return catalog;
+    }
+
+    /**
+     * Dynamically generates a new live educational task powered by AI with real YouTube link and quiz.
+     */
+    public TaskTemplate generateAiLiveTask(int userId, String subject) {
+        String key = "TASK-AI-" + System.currentTimeMillis() % 10000;
+        if (subject == null || subject.isBlank() || subject.toLowerCase().contains("invest")) {
+            return new TaskTemplate(
+                    key,
+                    "✨ AI Live Task: Index Funds & Passive Investing Mastery",
+                    "Financial Markets & AI",
+                    "https://www.youtube.com/watch?v=p7HKvqRI_Bo",
+                    60,
+                    25.0,
+                    Arrays.asList(
+                            new MCQ("What is the primary advantage of broad market index funds over active stock picking?",
+                                    Arrays.asList("Guaranteed 100% return every month", "Low expense ratios and diversified market exposure", "Zero market fluctuation ever", "No KYC needed"), 1),
+                            new MCQ("Why does dollar-cost averaging (DCA) protect student savings?",
+                                    Arrays.asList("It eliminates timing risk by investing regular amounts continuously", "It quadruples income immediately", "It replaces studying", "It requires daily trading"), 0)
+                    )
+            );
+        } else if (subject.toLowerCase().contains("tech") || subject.toLowerCase().contains("cs") || subject.toLowerCase().contains("code")) {
+            return new TaskTemplate(
+                    key,
+                    "✨ AI Live Task: Modern Cybersecurity & Phishing Defense",
+                    "Computer Science & Security",
+                    "https://www.youtube.com/watch?v=XBkzBrXllBo",
+                    60,
+                    25.0,
+                    Arrays.asList(
+                            new MCQ("What is the most effective defense against credential stuffing and phishing attacks?",
+                                    Arrays.asList("Using simple passwords", "Enabling multi-factor authentication (MFA)", "Clicking unknown email links", "Sharing OTPs with callers"), 1),
+                            new MCQ("How do banks officially communicate with customers regarding UPI PINs?",
+                                    Arrays.asList("Banks never ask for UPI PINs or OTPs to receive funds", "Banks call asking to read PIN aloud", "Banks send SMS asking to enter PIN on external web links", "Banks require PIN for lottery prizes"), 0)
+                    )
+            );
+        } else {
+            return new TaskTemplate(
+                    key,
+                    "✨ AI Live Task: The 72-Hour Rule & Impulse Control",
+                    "Behavioral Psychology & Finance",
+                    "https://www.youtube.com/watch?v=s8YkO4sL0dI",
+                    60,
+                    25.0,
+                    Arrays.asList(
+                            new MCQ("What is the goal of the 72-Hour Rule before making non-essential purchases?",
+                                    Arrays.asList("To allow emotional dopamine spikes to cool down", "To wait for prices to double", "To borrow money from friends", "To cancel savings plans"), 0),
+                            new MCQ("In SmartSave, what directly enforces delayed gratification?",
+                                    Arrays.asList("Immediate cash out", "Locked savings with multi-channel early release gates", "Unlimited free borrowing", "Automatic penalty fees"), 1)
+                    )
+            );
+        }
     }
 
     /**

@@ -96,17 +96,30 @@ public class AddCashView extends VBox {
 
         quickButtons.getChildren().addAll(b10, b25, b50, b100);
 
+        // Payment Methods: Google Pay & NetBanking
+        Label payMethodLabel = new Label("Payment Method");
+        payMethodLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #263238;");
+
+        TextField upiIdField = new TextField("alex@okaxis");
+        upiIdField.setPromptText("Enter Google Pay UPI ID (e.g. name@okaxis)");
+        upiIdField.setStyle("-fx-font-size: 14px; -fx-background-color: #FFFFFF; -fx-background-radius: 10px; -fx-border-color: #CFD8DC; -fx-border-radius: 10px; -fx-padding: 8px 12px;");
+
         feedbackLabel = new Label("");
         feedbackLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
 
-        // Simulated Virtual Top-Up Button (Google Pay / Parent Funding)
-        Button addCashBtn = new Button("Add Virtual Cash Now");
+        // Google Pay Branded Button
+        Button gpayBtn = new Button("⚡ Pay with Google Pay (GPay)");
+        gpayBtn.setStyle("-fx-background-color: #1F1F1F; -fx-text-fill: #FFFFFF; -fx-font-size: 15px; -fx-font-weight: bold; -fx-background-radius: 12px; -fx-padding: 12px; -fx-cursor: hand; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0, 0, 2);");
+        gpayBtn.setPrefWidth(Double.MAX_VALUE);
+        gpayBtn.setOnAction(e -> handleAddCash(upiIdField.getText().trim(), true));
+
+        Button addCashBtn = new Button("Add Cash via Bank / UPI");
         addCashBtn.getStyleClass().add("cyan-button");
         addCashBtn.setPrefWidth(Double.MAX_VALUE);
-        addCashBtn.setPrefHeight(52);
-        addCashBtn.setOnAction(e -> handleAddCash());
+        addCashBtn.setPrefHeight(46);
+        addCashBtn.setOnAction(e -> handleAddCash(upiIdField.getText().trim(), false));
 
-        getChildren().addAll(topBar, subtitle, withdrawHint, depositCard, quickSelectLabel, quickButtons, feedbackLabel, addCashBtn);
+        getChildren().addAll(topBar, subtitle, withdrawHint, depositCard, quickSelectLabel, quickButtons, payMethodLabel, upiIdField, feedbackLabel, gpayBtn, addCashBtn);
     }
 
     private Button createQuickButton(String label, String amount) {
@@ -117,7 +130,7 @@ public class AddCashView extends VBox {
         return btn;
     }
 
-    private void handleAddCash() {
+    private void handleAddCash(String upiId, boolean isGooglePay) {
         String input = amountField.getText().trim();
         double amount;
         try {
@@ -136,9 +149,12 @@ public class AddCashView extends VBox {
 
         User user = authService.getCurrentUser();
         if (user != null) {
-            boolean success = walletService.depositVirtualFunds(user.getId(), amount, "Simulated Virtual Deposit");
+            String desc = isGooglePay
+                    ? "Google Pay UPI Deposit - " + (upiId == null || upiId.isBlank() ? "user@okaxis" : upiId)
+                    : "Deposit via Bank / UPI - " + (upiId == null || upiId.isBlank() ? "Direct TopUp" : upiId);
+            boolean success = walletService.depositVirtualFunds(user.getId(), amount, desc);
             if (success) {
-                feedbackLabel.setText(String.format(Locale.getDefault(), "Successfully added ₹%.2f to your wallet!", amount));
+                feedbackLabel.setText(String.format(Locale.getDefault(), "Successfully added ₹%.2f via %s!", amount, isGooglePay ? "Google Pay" : "NetBanking"));
                 feedbackLabel.setStyle("-fx-text-fill: #4CAF50;");
                 ScreenManager.getInstance().showHome();
             } else {

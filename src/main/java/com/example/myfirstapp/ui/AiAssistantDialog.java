@@ -98,7 +98,19 @@ public class AiAssistantDialog {
         HBox.setHgrow(promptField, Priority.ALWAYS);
 
         Button sendBtn = new Button("Ask AI");
-        sendBtn.setStyle("-fx-background-color: #00BCD4; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10px;");
+        sendBtn.setStyle("-fx-background-color: #00BCD4; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10px; -fx-cursor: hand;");
+
+        Button speakBtn = new Button("🔊 Speak");
+        speakBtn.setStyle("-fx-background-color: #00838F; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10px; -fx-cursor: hand;");
+        speakBtn.setOnAction(e -> {
+            String text = chatArea.getText();
+            int lastIdx = text.lastIndexOf("🤖 [");
+            if (lastIdx == -1) lastIdx = text.lastIndexOf("✨ [");
+            if (lastIdx == -1) lastIdx = text.lastIndexOf("Hello ");
+            String toSpeak = (lastIdx != -1) ? text.substring(lastIdx) : text;
+            speakText(toSpeak);
+        });
+
         sendBtn.setOnAction(e -> {
             String q = promptField.getText().trim();
             if (!q.isEmpty()) {
@@ -106,10 +118,11 @@ public class AiAssistantDialog {
                 String response = aiService.answerQuestion(q, authService.getCurrentUser());
                 chatArea.appendText("\n\n" + response);
                 promptField.clear();
+                speakText(response);
             }
         });
 
-        inputRow.getChildren().addAll(promptField, sendBtn);
+        inputRow.getChildren().addAll(promptField, sendBtn, speakBtn);
 
         layout.getChildren().addAll(header, chatArea, chips, inputRow);
 
@@ -128,5 +141,20 @@ public class AiAssistantDialog {
             chatArea.appendText("\n\n" + response);
         });
         return chip;
+    }
+
+    private void speakText(String text) {
+        if (text == null || text.isBlank()) return;
+        Thread t = new Thread(() -> {
+            try {
+                String clean = text.replaceAll("[#*✨📊🎯💡🎬📺•👋🧑🤖\r\n\"]", " ").trim();
+                if (clean.length() > 250) clean = clean.substring(0, 250);
+                ProcessBuilder pb = new ProcessBuilder("powershell", "-Command",
+                        "Add-Type -AssemblyName System.Speech; $s = New-Object System.Speech.Synthesis.SpeechSynthesizer; $s.Speak('" + clean.replace("'", "") + "')");
+                pb.start();
+            } catch (Exception ignored) {}
+        });
+        t.setDaemon(true);
+        t.start();
     }
 }
